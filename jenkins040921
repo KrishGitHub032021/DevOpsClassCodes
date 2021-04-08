@@ -1,0 +1,45 @@
+pipeline{
+    tools{
+        jdk 'master_vm_java_path'
+        maven 'master_vm_maven_autoinstall'
+    }
+    agent none
+    stages{
+        stage('Staging'){
+            agent any
+            steps{
+                git 'https://github.com/devops-trainer/DevOpsClassCodes.git'
+            }
+        }
+        stage('Compilation'){
+            agent any
+            steps{
+                sh 'mvn -f /tmp/projects/DevOpsClassCodes/pom.xml compile'
+            }
+        }
+        stage('CodeReview'){
+            agent any
+            steps{
+                sh 'mvn -f /tmp/projects/DevOpsClassCodes/pom.xml pmd:pmd'
+            }
+        }
+        stage('UnitTest'){
+            agent {label 'jen_slave'}
+            steps{
+                sh 'mvn -f /tmp/projects/DevOpsClassCodes/pom.xml test'
+            }
+        }
+        stage('NextStageCheck'){
+            agent any
+            steps{
+                sh 'mvn cobertura:cobertura -Dcobertura.report.format=xml'
+            }
+        }
+        stage('CodePackaging'){
+            agent {label 'jen_slave'}
+            steps{
+                sh 'mvn -f /tmp/projects/DevOpsClassCodes/pom.xml package'
+            }
+        }
+    }
+}
